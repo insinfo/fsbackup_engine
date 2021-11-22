@@ -1,0 +1,27 @@
+[package]
+name = "fsbackup_engine"
+version = "0.1.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+ssh2 = "0.9.0" # Bindings to libssh2 for interacting with SSH servers and executing remote commands
+#whoami = "1.2.0" # Retrieve the current user and environment.
+toml = "0.5.8" # A native Rust encoder and decoder of TOML-formatted files and streams.
+rand = "0.8.4" # Random number generators and other randomness functionality.
+regex = "1.5.4" # An implementation of regular expressions
+lazy_static = "1.4.0" # A macro for declaring lazily evaluated statics
+log = "0.4.14" # A lightweight logging facade for
+bytesize = "1.1.0" # an utility for human-readable bytes representations
+chrono = "0.4.19" # Date and time library
+wildmatch = "2.0.0" # Simple string matching with questionmark and star wildcard operator.
+thiserror = "^1.0.0" # provides a convenient derive macro for the standard library's std::error::Error trait.
+
+[target."cfg(target_family = \"unix\")"]
+[target."cfg(target_family = \"unix\")".dependencies]
+users = "0.11.0" # Library for accessing Unix users and groups
+
+[target."cfg(target_os = \"windows\")"]
+[target."cfg(target_os = \"windows\")".dependencies]
+path-slash = "0.1.4" # Conversion to\from a file path from/to slash path
