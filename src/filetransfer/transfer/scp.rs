@@ -398,11 +398,9 @@ impl FileTransfer for ScpFileTransfer {
           }*/
 
         // Proceeed with username/password authentication
-        debug!(
-                    "Authenticating with username {} and password {}",
-                    username,
-                    shadow_password(params.password.as_deref().unwrap_or(""))
-                );
+        debug!("Authenticating with username {} and password {}",username,
+            shadow_password(params.password.as_deref().unwrap_or(""))
+        );
         if let Err(err) = session.userauth_password(
             username.as_str(),
             params
@@ -465,6 +463,14 @@ impl FileTransfer for ScpFileTransfer {
         }
     }
 
+    fn try_disconnect(&mut self) -> bool {
+        let is_connected = match self.disconnect() {
+            Ok(ban) => true,
+            Err(error) => false
+        };
+        return  is_connected;
+    }
+
     /// ### is_connected
     ///
     /// Indicates whether the client is connected to remote
@@ -475,7 +481,6 @@ impl FileTransfer for ScpFileTransfer {
     /// ### pwd
     ///
     /// Print working directory
-
     fn pwd(&mut self) -> FileTransferResult<PathBuf> {
         info!("PWD: {}", self.wrkdir.display());
         match self.is_connected() {
@@ -489,7 +494,6 @@ impl FileTransfer for ScpFileTransfer {
     /// ### change_dir
     ///
     /// Change working directory
-
     fn change_dir(&mut self, dir: &Path) -> FileTransferResult<PathBuf> {
         match self.is_connected() {
             true => {
@@ -581,7 +585,6 @@ impl FileTransfer for ScpFileTransfer {
     /// ### list_dir
     ///
     /// List directory entries
-
     fn list_dir(&mut self, path: &Path) -> FileTransferResult<Vec<FsEntry>> {
         match self.is_connected() {
             true => {

@@ -7,12 +7,13 @@ edition = "2018"
 
 [dependencies]
 ssh2 = "0.9.0" # Bindings to libssh2 for interacting with SSH servers and executing remote commands
-#whoami = "1.2.0" # Retrieve the current user and environment.
+whoami = "=1.1.0" # Retrieve the current user and environment.
 toml = "0.5.8" # A native Rust encoder and decoder of TOML-formatted files and streams.
 rand = "0.8.4" # Random number generators and other randomness functionality.
 regex = "1.5.4" # An implementation of regular expressions
 lazy_static = "1.4.0" # A macro for declaring lazily evaluated statics
 log = "0.4.14" # A lightweight logging facade for
+simplelog = "0.10.0" # A simple and easy-to-use logging facility for Rust's log crate
 bytesize = "1.1.0" # an utility for human-readable bytes representations
 chrono = "0.4.19" # Date and time library
 wildmatch = "2.0.0" # Simple string matching with questionmark and star wildcard operator.

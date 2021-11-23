@@ -7,6 +7,7 @@ use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
 use thiserror::Error;
 use wildmatch::WildMatch;
+
 // exports
 pub mod params;
 mod transfer;
@@ -22,7 +23,8 @@ pub use transfer::{ScpFileTransfer /*, FtpFileTransfer, S3FileTransfer, , SftpFi
 pub enum FileTransferProtocol {
     Sftp,
     Scp,
-    Ftp(bool), // Bool is for secure (true => ftps)
+    Ftp(bool),
+    // Bool is for secure (true => ftps)
     AwsS3,
 }
 
@@ -139,6 +141,8 @@ pub trait FileTransfer {
     ///
     /// Disconnect from the remote server
     fn disconnect(&mut self) -> FileTransferResult<()>;
+
+    fn try_disconnect(&mut self) -> bool;
 
     /// ### is_connected
     ///
