@@ -1,3 +1,4 @@
+use std::ffi::OsStr;
 // Ext
 use std::path::PathBuf;
 use std::time::SystemTime;
@@ -5,7 +6,6 @@ use std::time::SystemTime;
 /// ## FsEntry
 ///
 /// FsEntry represents a generic entry in a directory
-
 #[derive(Clone, std::fmt::Debug)]
 pub enum FsEntry {
     Directory(FsDirectory),
@@ -15,7 +15,6 @@ pub enum FsEntry {
 /// ## FsDirectory
 ///
 /// Directory provides an interface to file system directories
-
 #[derive(Clone, std::fmt::Debug)]
 pub struct FsDirectory {
     pub name: String,
@@ -23,16 +22,54 @@ pub struct FsDirectory {
     pub last_change_time: SystemTime,
     pub last_access_time: SystemTime,
     pub creation_time: SystemTime,
-    pub symlink: Option<Box<FsEntry>>,                 // UNIX only
-    pub user: Option<u32>,                             // UNIX only
-    pub group: Option<u32>,                            // UNIX only
+    pub symlink: Option<Box<FsEntry>>,
+    // UNIX only
+    pub user: Option<u32>,
+    // UNIX only
+    pub group: Option<u32>,
+    // UNIX only
     pub unix_pex: Option<(UnixPex, UnixPex, UnixPex)>, // UNIX only
+}
+
+impl FsDirectory {
+    pub fn from_str( abs_path: &str) -> FsDirectory {
+        let path = PathBuf::from(abs_path);
+        return FsDirectory {
+            name: match path.file_name() {
+                None => String::new(),
+                Some(item) => String::from(item.to_str().expect("FsDirectory@from_str error on get file_name"))
+            },
+            abs_path: path,
+            last_change_time: SystemTime::now(),
+            last_access_time: SystemTime::now(),
+            creation_time: SystemTime::now(),
+            symlink: None,
+            user: None,
+            group: None,
+            unix_pex: None,
+        };
+    }
+    pub fn from_path_buf(path: PathBuf) -> FsDirectory {
+        return FsDirectory {
+            name: match path.file_name() {
+                None => String::new(),
+                Some(item) => String::from(item.to_str().expect("FsDirectory@from_str error on get file_name"))
+            },
+            abs_path: path,
+            last_change_time: SystemTime::now(),
+            last_access_time: SystemTime::now(),
+            creation_time: SystemTime::now(),
+            symlink: None,
+            user: None,
+            group: None,
+            unix_pex: None,
+        };
+    }
 }
 
 /// ### FsFile
 ///
 /// FsFile provides an interface to file system files
-
 #[derive(Clone, std::fmt::Debug)]
 pub struct FsFile {
     pub name: String,
@@ -41,11 +78,56 @@ pub struct FsFile {
     pub last_access_time: SystemTime,
     pub creation_time: SystemTime,
     pub size: usize,
-    pub ftype: Option<String>,                         // File type
-    pub symlink: Option<Box<FsEntry>>,                 // UNIX only
-    pub user: Option<u32>,                             // UNIX only
-    pub group: Option<u32>,                            // UNIX only
+    pub ftype: Option<String>,
+    // File type
+    pub symlink: Option<Box<FsEntry>>,
+    // UNIX only
+    pub user: Option<u32>,
+    // UNIX only
+    pub group: Option<u32>,
+    // UNIX only
     pub unix_pex: Option<(UnixPex, UnixPex, UnixPex)>, // UNIX only
+}
+
+impl FsFile {
+    pub fn from_str(abs_path: &str) -> FsFile {
+        let path = PathBuf::from(abs_path);
+        return FsFile {
+            name: match path.file_name() {
+                None => String::new(),
+                Some(item) => String::from(item.to_str().expect("FsFile@from_str error on get file_name"))
+            },
+            abs_path: path,
+            last_change_time: SystemTime::now(),
+            last_access_time: SystemTime::now(),
+            creation_time: SystemTime::now(),
+            size: 0,//182,
+            ftype: None,
+            symlink: None,
+            user: None,
+            group: None,
+            unix_pex: None,
+        };
+    }
+
+    pub fn from_path_buf(path: PathBuf) -> FsFile {
+        return FsFile {
+            name: match path.file_name() {
+                None => String::new(),
+                Some(item) => String::from(item.to_str().expect("FsFile@from_path_buf error on get file_name"))
+            },
+            abs_path: path,
+            last_change_time: SystemTime::now(),
+            last_access_time: SystemTime::now(),
+            creation_time: SystemTime::now(),
+            size: 0,//182,
+            ftype: None,
+            symlink: None,
+            user: None,
+            group: None,
+            unix_pex: None,
+        };
+    }
 }
 
 /// ## UnixPex

@@ -65,7 +65,7 @@ impl FileTransferParams {
 
 impl Default for FileTransferParams {
     fn default() -> Self {
-        Self::new(FileTransferProtocol::Sftp, ProtocolParams::default())
+        Self::new(FileTransferProtocol::Scp, ProtocolParams::default())
     }
 }
 

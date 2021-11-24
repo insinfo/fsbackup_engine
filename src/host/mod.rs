@@ -105,28 +105,28 @@ impl Localhost {
             files: Vec::new(),
         };
         // Check if dir exists
-        if !host.file_exists(host.wrkdir.as_path()) {
-            error!(
-                "Failed to initialize localhost: {} doesn't exist",
-                host.wrkdir.display()
-            );
-            return Err(HostError::new(
-                HostErrorType::NoSuchFileOrDirectory,
-                None,
-                host.wrkdir.as_path(),
-            ));
-        }
-        // Retrieve files for provided path
-        host.files = match host.scan_dir(host.wrkdir.as_path()) {
-            Ok(files) => files,
-            Err(err) => {
-                error!(
-                    "Failed to initialize localhost: could not scan wrkdir: {}",
-                    err
-                );
-                return Err(err);
-            }
-        };
+        /* if !host.file_exists(host.wrkdir.as_path()) {
+             error!(
+                 "Failed to initialize localhost: {} doesn't exist",
+                 host.wrkdir.display()
+             );
+             return Err(HostError::new(
+                 HostErrorType::NoSuchFileOrDirectory,
+                 None,
+                 host.wrkdir.as_path(),
+             ));
+         }
+         // Retrieve files for provided path
+         host.files = match host.scan_dir(host.wrkdir.as_path()) {
+             Ok(files) => files,
+             Err(err) => {
+                 error!(
+                     "Failed to initialize localhost: could not scan wrkdir: {}",
+                     err
+                 );
+                 return Err(err);
+             }
+         };*/
         info!("Localhost initialized with success");
         Ok(host)
     }
@@ -211,7 +211,7 @@ impl Localhost {
                         HostErrorType::FileAlreadyExists,
                         None,
                         dir_path.as_path(),
-                    ))
+                    ));
                 }
             }
         }
@@ -669,6 +669,40 @@ impl Localhost {
                         HostErrorType::FileNotAccessible,
                         Some(err),
                         file.as_path(),
+                    )),
+                }
+            }
+        }
+    }
+
+    /// ### open_file_write_to_cwd
+    ///
+    /// Open file for write to current work directory
+    pub fn open_file_write_to_cwd(&self, file: &Path) -> Result<File, HostError> {
+        let wrkdir: PathBuf = self.wrkdir.clone();
+        //Todo: verificar se a junção de caminho funciona
+        let path = wrkdir.as_path().join(file);
+
+        info!("Opening file {} for write", path.display());
+        match OpenOptions::new()
+            .create(true)
+            .write(true)
+            .truncate(true)
+            .open(&path)
+        {
+            Ok(f) => Ok(f),
+            Err(err) => {
+                error!("Failed to open file: {}", err);
+                match self.file_exists(&path) {
+                    true => Err(HostError::new(
+                        HostErrorType::ReadonlyFile,
+                        Some(err),
+                        &path,
+                    )),
+                    false => Err(HostError::new(
+                        HostErrorType::FileNotAccessible,
+                        Some(err),
+                        &path,
                     )),
                 }
             }

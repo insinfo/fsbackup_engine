@@ -21,11 +21,11 @@ pub use transfer::{ScpFileTransfer /*, FtpFileTransfer, S3FileTransfer, , SftpFi
 /// This enum defines the different transfer protocol available
 #[derive(PartialEq, Debug, Clone, Copy)]
 pub enum FileTransferProtocol {
-    Sftp,
+   // Sftp,
     Scp,
-    Ftp(bool),
+   // Ftp(bool),
     // Bool is for secure (true => ftps)
-    AwsS3,
+   // AwsS3,
 }
 
 /// ## FileTransferError
@@ -222,6 +222,16 @@ pub trait FileTransfer {
             FileTransferErrorType::UnsupportedFeature,
         ))
     }
+    /// ### recv_file_from_str
+    ///
+    /// Receive file from remote with provided abs_path
+    /// Returns file and its size
+    /// By default returns unsupported feature
+    fn recv_file_from_str(&mut self, abs_path: &str) -> FileTransferResult<Box<dyn Read>> {
+        Err(FileTransferError::new(
+            FileTransferErrorType::UnsupportedFeature,
+        ))
+    }
 
     /// ### on_sent
     ///
@@ -326,6 +336,29 @@ pub trait FileTransfer {
             )),
         }
     }
+    /// ###  list_dir_recursively
+    /// List all entries recursively
+    fn list_dir_recursively(&mut self, dir: &Path) -> FileTransferResult<Vec<FsEntry>> {
+        let mut drained: Vec<FsEntry> = Vec::new();
+        // Scan directory
+        match self.list_dir(dir) {
+            Ok(entries) => {
+                for entry in entries.iter() {
+                    match entry {
+                        FsEntry::Directory(dir) => {
+                            drained.push(FsEntry::Directory(dir.clone()));
+                            drained.append(&mut self.list_dir_recursively(dir.abs_path.as_path())?);
+                        }
+                        FsEntry::File(file) => {
+                            drained.push(FsEntry::File(file.clone()));
+                        }
+                    }
+                }
+                Ok(drained)
+            }
+            Err(err) => Err(err),
+        }
+    }
 
     /// ### iter_search
     ///
@@ -371,13 +404,13 @@ pub trait FileTransfer {
 impl std::string::ToString for FileTransferProtocol {
     fn to_string(&self) -> String {
         String::from(match self {
-            FileTransferProtocol::Ftp(secure) => match secure {
-                true => "FTPS",
-                false => "FTP",
-            },
+            //FileTransferProtocol::Ftp(secure) => match secure {
+            //    true => "FTPS",
+            //    false => "FTP",
+            //},
             FileTransferProtocol::Scp => "SCP",
-            FileTransferProtocol::Sftp => "SFTP",
-            FileTransferProtocol::AwsS3 => "S3",
+            //FileTransferProtocol::Sftp => "SFTP",
+            //FileTransferProtocol::AwsS3 => "S3",
         })
     }
 }
@@ -386,11 +419,11 @@ impl std::str::FromStr for FileTransferProtocol {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_ascii_uppercase().as_str() {
-            "FTP" => Ok(FileTransferProtocol::Ftp(false)),
-            "FTPS" => Ok(FileTransferProtocol::Ftp(true)),
+            //"FTP" => Ok(FileTransferProtocol::Ftp(false)),
+            //"FTPS" => Ok(FileTransferProtocol::Ftp(true)),
             "SCP" => Ok(FileTransferProtocol::Scp),
-            "SFTP" => Ok(FileTransferProtocol::Sftp),
-            "S3" => Ok(FileTransferProtocol::AwsS3),
+            //"SFTP" => Ok(FileTransferProtocol::Sftp),
+            //"S3" => Ok(FileTransferProtocol::AwsS3),
             _ => Err(s.to_string()),
         }
     }

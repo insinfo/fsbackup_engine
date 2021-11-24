@@ -918,4 +918,29 @@ impl FileTransfer for ScpFileTransfer {
             )),
         }
     }
+
+    /// ### recv_file_from_str
+    ///
+    /// Receive file from remote with provided abs_path
+    /// Returns file and its size
+    fn recv_file_from_str(&mut self, abs_path: &str) -> FileTransferResult<Box<dyn Read>> {
+        match self.session.as_ref() {
+            Some(session) => {
+                info!("Receiving file {}", abs_path);
+                // Set blocking to true
+                debug!("Set blocking...");
+                session.set_blocking(true);
+                match session.scp_recv(Path::new(abs_path)) {
+                    Ok(reader) => Ok(Box::new(BufReader::with_capacity(65536, reader.0))),
+                    Err(err) => Err(FileTransferError::new_ex(
+                        FileTransferErrorType::ProtocolError,
+                        err.to_string(),
+                    )),
+                }
+            }
+            None => Err(FileTransferError::new(
+                FileTransferErrorType::UninitializedSession,
+            )),
+        }
+    }
 }

@@ -18,6 +18,7 @@ bytesize = "1.1.0" # an utility for human-readable bytes representations
 chrono = "0.4.19" # Date and time library
 wildmatch = "2.0.0" # Simple string matching with questionmark and star wildcard operator.
 thiserror = "^1.0.0" # provides a convenient derive macro for the standard library's std::error::Error trait.
+failure = { version = "0.1.8", features = [] } #Abstração experimental de tratamento de erros.
 
 [target."cfg(target_family = \"unix\")"]
 [target."cfg(target_family = \"unix\")".dependencies]
