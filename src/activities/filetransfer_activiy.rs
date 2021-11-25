@@ -712,12 +712,15 @@ impl FileTransferActivity {
                 }
             }
             FsEntry::Directory(dir) => {
+
                 // Get dir name
                 let mut local_dir_path: PathBuf = PathBuf::from(local_path);
-                match dst_name {
+                debug!("Get local_dir_path: {}", local_dir_path.as_path().display());
+                match &dst_name {
                     Some(name) => local_dir_path.push(name),
                     None => local_dir_path.push(dir.name.as_str()),
                 }
+                debug!("Get dst_name: {:?}", dst_name);
                 // Create directory on local
                 match self.host.mkdir_ex(local_dir_path.as_path(), true) {
                     Ok(_) => {
@@ -750,6 +753,7 @@ impl FileTransferActivity {
                         // Get files in dir
                         match self.client.list_dir(dir.abs_path.as_path()) {
                             Ok(entries) => {
+                                //debug!("Get files in dir: {:?}",entries);
                                 // Iterate over files
                                 for entry in entries.iter() {
                                     // If transfer has been aborted; break

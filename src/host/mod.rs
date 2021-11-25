@@ -100,6 +100,8 @@ impl Localhost {
     /// Instantiates a new Localhost struct
     pub fn new(wrkdir: PathBuf) -> Result<Localhost, HostError> {
         debug!("Initializing localhost at {}", wrkdir.display());
+        //Todo check unused
+        #[allow(unused_mut)]
         let mut host: Localhost = Localhost {
             wrkdir,
             files: Vec::new(),

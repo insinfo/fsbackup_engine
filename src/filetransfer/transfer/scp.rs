@@ -73,9 +73,10 @@ impl ScpFileTransfer {
         // Prepare list regex
         // NOTE: about this damn regex <https://stackoverflow.com/questions/32480890/is-there-a-regex-to-parse-the-values-from-an-ftp-directory-listing>
         lazy_static! {
-            static ref LS_RE: Regex = Regex::new(r#"^([\-ld])([\-rwxs]{9})\s+(\d+)\s+(\w+)\s+(\w+)\s+(\d+)\s+(\w{3}\s+\d{1,2}\s+(?:\d{1,2}:\d{1,2}|\d{4}))\s+(.+)$"#).unwrap();
+            //fix Regex https://github.com/veeso/termscp/issues/78
+            static ref LS_RE: Regex = Regex::new(r#"^([\-ld])([\-rwxs]{9})\s+(\d+)\s+(.+)\s+(.+)\s+(\d+)\s+(\w{3}\s+\d{1,2}\s+(?:\d{1,2}:\d{1,2}|\d{4}))\s+(.+)$"#).unwrap();
         }
-        debug!("Parsing LS line: '{}'", line);
+       // debug!("Parsing LS line: '{}'", line);
         // Apply regex to result
         match LS_RE.captures(line) {
             // String matches regex
@@ -85,6 +86,7 @@ impl ScpFileTransfer {
                 if metadata.len() < 8 {
                     return Err(());
                 }
+                debug!("Parsing LS line metadata: {:?}", metadata);
                 // Collect metadata
                 // Get if is directory and if is symlink
                 let (mut is_dir, is_symlink): (bool, bool) = match metadata.get(1).unwrap().as_str()
@@ -150,7 +152,6 @@ impl ScpFileTransfer {
                     .as_str()
                     .parse::<usize>()
                     .unwrap_or(0);
-
                 // Get link and name
                 let (file_name, symlink_path): (String, Option<PathBuf>) = match is_symlink {
                     true => self.get_name_and_link(metadata.get(8).unwrap().as_str()),
@@ -236,6 +237,7 @@ impl ScpFileTransfer {
             None => Err(()),
         }
     }
+
 
     /// ### get_name_and_link
     ///
@@ -468,7 +470,7 @@ impl FileTransfer for ScpFileTransfer {
             Ok(ban) => true,
             Err(error) => false
         };
-        return  is_connected;
+        return is_connected;
     }
 
     /// ### is_connected
@@ -603,7 +605,9 @@ impl FileTransfer for ScpFileTransfer {
                         for line in lines.iter() {
                             // First line must always be ignored
                             // Parse row, if ok push to entries
-                            if let Ok(entry) = self.parse_ls_output(path.as_path(), line) {
+                            let parsed = self.parse_ls_output(path.as_path(), line);
+                            debug!("parsed FsEntry:  {:?}",parsed);
+                            if let Ok(entry) = parsed {
                                 entries.push(entry);
                             }
                         }

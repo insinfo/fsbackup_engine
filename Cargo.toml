@@ -7,7 +7,7 @@ edition = "2018"
 
 [dependencies]
 ssh2 = "0.9.0" # Bindings to libssh2 for interacting with SSH servers and executing remote commands
-whoami = "=1.1.0" # Retrieve the current user and environment.
+whoami = "1.2.1" # < 1.1.0 bug https://github.com/libcala/whoami/issues/36  # Retrieve the current user and environment.
 toml = "0.5.8" # A native Rust encoder and decoder of TOML-formatted files and streams.
 rand = "0.8.4" # Random number generators and other randomness functionality.
 regex = "1.5.4" # An implementation of regular expressions
