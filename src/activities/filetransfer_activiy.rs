@@ -12,7 +12,9 @@ use std::io::{Read, Seek, Write};
 use std::path::{Path, PathBuf};
 use std::time::Instant;
 use thiserror::Error;
-use crate::{FileTransfer, FileTransferProtocol, Localhost, ProtocolParams, ScpFileTransfer};
+
+
+use crate::{FileTransfer, FileTransferProtocol, FileTransferResult, FsDirectory, Localhost, ProtocolParams, ScpFileTransfer};
 use crate::activities::transfer::TransferStates;
 
 
@@ -651,13 +653,14 @@ impl FileTransferActivity {
 
         result
     }
-
+    /// faz a recusão para copiar todos os arquivos, diretorios e subdiretorios
     fn filetransfer_recv_recurse(
         &mut self,
         entry: &FsEntry,
         local_path: &Path,
         dst_name: Option<String>,
     ) -> Result<(), String> {
+        info!("chamou: filetransfer_recv_recurse");
         // Write popup
         let file_name: String = match entry {
             FsEntry::Directory(dir) => dir.name.clone(),
@@ -715,12 +718,12 @@ impl FileTransferActivity {
 
                 // Get dir name
                 let mut local_dir_path: PathBuf = PathBuf::from(local_path);
-                debug!("Get local_dir_path: {}", local_dir_path.as_path().display());
+                //debug!("Get local_dir_path: {}", local_dir_path.as_path().display());
                 match &dst_name {
                     Some(name) => local_dir_path.push(name),
                     None => local_dir_path.push(dir.name.as_str()),
                 }
-                debug!("Get dst_name: {:?}", dst_name);
+                // debug!("Get dst_name: {:?}", dst_name);
                 // Create directory on local
                 match self.host.mkdir_ex(local_dir_path.as_path(), true) {
                     Ok(_) => {
@@ -815,8 +818,67 @@ impl FileTransferActivity {
         result
     }
 
+    pub fn filetransfer_recv_dir_as_zip(&mut self, dir_to_copy: &FsDirectory, local_path: &Path) -> FileTransferResult<()> {
+        //obter lista de diretorio recursivamente
+        match self.client.list_dir_recursively(&dir_to_copy.abs_path.clone()) {
+            Ok(it) => {
+                let dst_file_writer = File::create(local_path.join("result.zip")).unwrap();
+                let mut zip_writer = zip::ZipWriter::new(dst_file_writer);
+
+                let mut buffer = Vec::new();
+
+                for entry in it {
+                    let options = zip::write::FileOptions::default()
+                        .compression_method(zip::CompressionMethod::Stored)
+                        .unix_permissions(0o755);
+                    match entry {
+                        FsEntry::File(remote) => {
+
+                            let path = &remote.abs_path;
+                            //remove a parte inicial do caminho
+                            let name = path.strip_prefix(&dir_to_copy.abs_path).unwrap();
+                            debug!("source: {}",name.display());
+
+                            match self.client.recv_file(&remote) {
+                                Ok(mut rhnd) => {
+                                    #[allow(deprecated)]
+                                        zip_writer.start_file_from_path(name, options).unwrap();
+
+                                    rhnd.read_to_end(&mut buffer).unwrap();
+                                    zip_writer.write_all(&*buffer).unwrap();
+                                    buffer.clear();
+                                }
+                                Err(err) if err.kind() == FileTransferErrorType::UnsupportedFeature => {
+                                    error!("FileTransferErrorType::UnsupportedFeature");
+                                }
+                                Err(err) => {
+                                    error!("FileTransferError {:?}",err);
+                                }
+                            }
+                        }
+                        FsEntry::Directory(dir) => {}
+                    }
+                }
+                zip_writer.finish().unwrap();
+                Ok(())
+            }
+            Err(err) => {
+                self.log(
+                    LogLevel::Error,
+                    format!(
+                        "Failed list dir recursively \"{}\": {}",
+                        dir_to_copy.abs_path.display(),
+                        err
+                    ),
+                );
+                Err(err)
+            }
+        }
+    }
+    //
+
+
     /// ### filetransfer_recv_one
-    /// isaque esta aqui
     /// Receive file from remote and write it to local path
     fn filetransfer_recv_one(
         &mut self,

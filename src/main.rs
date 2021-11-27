@@ -61,12 +61,13 @@ fn main() {
     //create directory if it doesn't exist
     std::fs::create_dir_all(dest_dir_path).expect(format!("Failed to create directory: {}", dest_dir_path).as_str());
 
-    match activity.filetransfer_recv(TransferPayload::Any(dir_to_download), &destiny, None) {
+   // match activity.filetransfer_recv(TransferPayload::Any(dir_to_download), &destiny, None) {
+    match activity.filetransfer_recv_dir_as_zip(&FsDirectory::from_str("/var/www/html/Alex"), &destiny) {
         Ok(result) => {
             println!("result: {:?}", result);
         }
         Err(e) => {
-            println!("error: {}", e);//eprintln!()
+            println!("error: {:?}", e);//eprintln!()
             process::exit(0);//1
         }
     }

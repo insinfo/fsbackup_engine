@@ -1,11 +1,10 @@
-
 use bytesize::ByteSize;
 use chrono::format::ParseError;
 use chrono::prelude::*;
 use regex::Regex;
 use std::path::PathBuf;
 use std::str::FromStr;
-use std::time::{Duration, SystemTime};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 /// ### parse_lstime
 ///
@@ -37,4 +36,44 @@ pub fn parse_lstime(tm: &str, fmt_year: &str, fmt_hours: &str) -> Result<SystemT
     Ok(sys_time
         .checked_add(Duration::from_secs(datetime.timestamp() as u64))
         .unwrap_or(SystemTime::UNIX_EPOCH))
+}
+
+
+pub fn str_unix_timestamp_to_system_time(tstm: &str) -> Result<SystemTime, ParseError> {
+    //debug!("str_unix_timestamp_to_system_time: {}",tstm);
+    match NaiveDateTime::parse_from_str("1520346412", "%s") {
+        Ok(date) => {
+            Ok(naive_date_time_to_system_time(date))
+        }
+        Err(errrrr) => {
+            error!("error on str_unix_timestamp_to_system_time: {}",errrrr);
+            Err(errrrr)
+        }
+    }
+}
+
+
+/// Convert std::time::SystemTime to chrono::datetime::DateTime
+/// https://users.rust-lang.org/t/convert-std-time-systemtime-to-chrono-datetime-datetime/7684/4
+pub fn system_time_to_date_time(t: SystemTime) -> DateTime<Utc> {
+    let (sec, nsec) = match t.duration_since(UNIX_EPOCH) {
+        Ok(dur) => (dur.as_secs() as i64, dur.subsec_nanos()),
+        Err(e) => { // unlikely but should be handled
+            let dur = e.duration();
+            let (sec, nsec) = (dur.as_secs() as i64, dur.subsec_nanos());
+            if nsec == 0 {
+                (-sec, 0)
+            } else {
+                (-sec - 1, 1_000_000_000 - nsec)
+            }
+        }
+    };
+    Utc.timestamp(sec, nsec)
+}
+
+pub fn naive_date_time_to_system_time(datetime: NaiveDateTime) -> SystemTime {
+    let sys_time: SystemTime = SystemTime::UNIX_EPOCH;
+    sys_time
+        .checked_add(Duration::from_secs(datetime.timestamp() as u64))
+        .unwrap_or(SystemTime::UNIX_EPOCH)
 }

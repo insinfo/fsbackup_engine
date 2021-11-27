@@ -15,8 +15,11 @@ use std::net::{SocketAddr, TcpStream, ToSocketAddrs};
 use std::ops::Range;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime};
+use chrono::NaiveDateTime;
 use lazy_static::lazy_static;
 use log::{debug, error, info};
+
+use crate::parser::{str_unix_timestamp_to_system_time, system_time_to_date_time};
 
 /// ## ScpFileTransfer
 ///
@@ -76,7 +79,7 @@ impl ScpFileTransfer {
             //fix Regex https://github.com/veeso/termscp/issues/78
             static ref LS_RE: Regex = Regex::new(r#"^([\-ld])([\-rwxs]{9})\s+(\d+)\s+(.+)\s+(.+)\s+(\d+)\s+(\w{3}\s+\d{1,2}\s+(?:\d{1,2}:\d{1,2}|\d{4}))\s+(.+)$"#).unwrap();
         }
-       // debug!("Parsing LS line: '{}'", line);
+        // debug!("Parsing LS line: '{}'", line);
         // Apply regex to result
         match LS_RE.captures(line) {
             // String matches regex
@@ -86,7 +89,7 @@ impl ScpFileTransfer {
                 if metadata.len() < 8 {
                     return Err(());
                 }
-                debug!("Parsing LS line metadata: {:?}", metadata);
+                //debug!("Parsing LS line metadata: {:?}", metadata);
                 // Collect metadata
                 // Get if is directory and if is symlink
                 let (mut is_dir, is_symlink): (bool, bool) = match metadata.get(1).unwrap().as_str()
@@ -135,6 +138,8 @@ impl ScpFileTransfer {
                     Ok(t) => t,
                     Err(_) => SystemTime::UNIX_EPOCH,
                 };
+
+
                 // Get uid
                 let uid: Option<u32> = match metadata.get(4).unwrap().as_str().parse::<u32>() {
                     Ok(uid) => Some(uid),
@@ -159,7 +164,7 @@ impl ScpFileTransfer {
                 };
                 // Check if file_name is '.' or '..'
                 if file_name.as_str() == "." || file_name.as_str() == ".." {
-                    debug!("File name is {}; ignoring entry", file_name);
+                    //debug!("File name is {}; ignoring entry", file_name);
                     return Err(());
                 }
                 // Get symlink; PATH mustn't be equal to filename
@@ -193,7 +198,7 @@ impl ScpFileTransfer {
                     .extension()
                     .map(|s| String::from(s.to_string_lossy()));
                 // Return
-                debug!("Follows LS line '{}' attributes", line);
+                /*debug!("Follows LS line '{}' attributes", line);
                 debug!("Is directory? {}", is_dir);
                 debug!("Is symlink? {}", is_symlink);
                 debug!("name: {}", file_name);
@@ -205,7 +210,7 @@ impl ScpFileTransfer {
                 debug!("user: {:?}", uid);
                 debug!("group: {:?}", gid);
                 debug!("unix_pex: {:?}", unix_pex);
-                debug!("---------------------------------------");
+                debug!("---------------------------------------");*/
                 // Push to entries
                 Ok(match is_dir {
                     true => FsEntry::Directory(FsDirectory {
@@ -291,7 +296,7 @@ impl ScpFileTransfer {
                     Ok(_) => {
                         // Wait close
                         let _ = channel.wait_close();
-                        debug!("Command output: {}", output);
+                        // debug!("Command output: {}", output);
                         Ok(output)
                     }
                     Err(err) => Err(FileTransferError::new_ex(
@@ -606,9 +611,35 @@ impl FileTransfer for ScpFileTransfer {
                             // First line must always be ignored
                             // Parse row, if ok push to entries
                             let parsed = self.parse_ls_output(path.as_path(), line);
-                            debug!("parsed FsEntry:  {:?}",parsed);
-                            if let Ok(entry) = parsed {
-                                entries.push(entry);
+
+                            // debug!("parsed FsEntry:  {:?}",parsed);
+                            if let Ok(mut entry) = parsed {
+
+                                //TODO avaliar impacto de obter informaçõs de modificação de arquivo
+                                let abs_p = match &entry {
+                                    FsEntry::File(fe) => &fe.abs_path,
+                                    FsEntry::Directory(dir) => &dir.abs_path
+                                };
+                                // %Y   time of last data modification, seconds since Epoch
+                                match self.perform_shell_cmd(
+                                    format!("stat -c %Y  \"{}\"", abs_p.to_string_lossy()).as_str(), ) {
+                                    Ok(output) => {
+                                        match &mut entry {
+                                            FsEntry::File(fe) => {
+                                                match str_unix_timestamp_to_system_time(&output) {
+                                                    Ok(mtime) => {
+                                                        fe.last_access_time = mtime;
+                                                    }
+                                                    Err(e) => {}
+                                                };
+                                            }
+                                            FsEntry::Directory(dir) => {}
+                                        };
+                                    }
+                                    Err(err) => {}
+                                };
+
+                                entries.push(entry)
                             }
                         }
                         info!(
@@ -845,7 +876,7 @@ impl FileTransfer for ScpFileTransfer {
                     file_name.display()
                 );
                 // Set blocking to true
-                debug!("blocking channel...");
+                //debug!("blocking channel...");
                 session.set_blocking(true);
                 // Calculate file mode
                 let mode: i32 = match local.unix_pex {
@@ -907,7 +938,7 @@ impl FileTransfer for ScpFileTransfer {
             Some(session) => {
                 info!("Receiving file {}", file.abs_path.display());
                 // Set blocking to true
-                debug!("Set blocking...");
+                //debug!("Set blocking...");
                 session.set_blocking(true);
                 match session.scp_recv(file.abs_path.as_path()) {
                     Ok(reader) => Ok(Box::new(BufReader::with_capacity(65536, reader.0))),
@@ -932,7 +963,7 @@ impl FileTransfer for ScpFileTransfer {
             Some(session) => {
                 info!("Receiving file {}", abs_path);
                 // Set blocking to true
-                debug!("Set blocking...");
+                // debug!("Set blocking...");
                 session.set_blocking(true);
                 match session.scp_recv(Path::new(abs_path)) {
                     Ok(reader) => Ok(Box::new(BufReader::with_capacity(65536, reader.0))),
